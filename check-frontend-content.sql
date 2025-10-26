@@ -1,0 +1,1 @@
+SELECT * FROM frontend_content LIMIT 10;

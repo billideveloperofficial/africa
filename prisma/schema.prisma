@@ -1,0 +1,347 @@
+// Prisma schema for Content Africa platform
+// Based on document.docx requirements with role-based user system
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  username      String     @unique
+  password_hash String
+  role          UserRole   // Enum for role-based access
+  phone         String?
+  country       String?
+  created_at    DateTime   @default(now())
+  last_login    DateTime?
+
+  // Relations
+  creator       Creator?
+  brand         Brand?
+  messages_sent Message[]  @relation("MessageFrom")
+  messages_received Message[] @relation("MessageTo")
+  communities   CommunityMember[]
+  posts         Post[]
+  authored_communities Community[]
+
+  @@map("users")
+}
+
+model Creator {
+  id             String   @id @default(cuid())
+  user_id        String   @unique
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  display_name   String
+  bio            String?
+  skills         String?  // JSON string of skills array
+  social_links   String?  // JSON string of social links
+  portfolio_urls String?  // JSON string of portfolio URLs
+  sample_media   String?  // JSON string of media objects
+  rates          Json?    // Rate structure
+  metrics        Json?    // Social metrics
+
+  // Relations
+  offers         Offer[]
+  audience       AudienceProfile?
+  content        ContentMetrics[]
+
+  @@map("creators")
+}
+
+model Brand {
+  id              String   @id @default(cuid())
+  user_id         String   @unique
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  company_name    String
+  company_website String?
+  billing_info    Json?    // Billing details
+
+  // Relations
+  briefs          Brief[]
+  offers          Offer[]
+
+  @@map("brands")
+}
+
+model Brief {
+  id           String   @id @default(cuid())
+  brand_id     String
+  brand        Brand    @relation(fields: [brand_id], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  budget       Float?
+  deliverables String?  // JSON string of deliverables array
+  deadline     DateTime?
+  status       BriefStatus @default(OPEN)
+
+  // Relations
+  offers       Offer[]
+  campaigns    CampaignMetrics[]
+
+  @@map("briefs")
+}
+
+model Offer {
+  id            String   @id @default(cuid())
+  brief_id      String
+  brief         Brief    @relation(fields: [brief_id], references: [id], onDelete: Cascade)
+  creator_id    String
+  creator       Creator  @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+  brand_id      String
+  brand         Brand    @relation(fields: [brand_id], references: [id], onDelete: Cascade)
+  amount        Float
+  platform_fee  Float
+  status        OfferStatus @default(PENDING)
+
+  // Relations
+  transactions  Transaction[]
+
+  @@map("offers")
+}
+
+model Transaction {
+  id               String   @id @default(cuid())
+  offer_id         String
+  offer            Offer    @relation(fields: [offer_id], references: [id], onDelete: Cascade)
+  stripe_payment_id String?
+  amount           Float
+  platform_fee     Float
+  payout_status    PayoutStatus @default(PENDING)
+  created_at       DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Community {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  author_id String
+  author    User     @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+
+  // Relations
+  members   CommunityMember[]
+  posts     Post[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id           String   @id @default(cuid())
+  user_id      String
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  community_id String
+  community    Community @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  joined_at    DateTime @default(now())
+
+  @@unique([user_id, community_id])
+  @@map("community_members")
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  community_id String
+  community    Community @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  title        String
+  content      String
+  author_id    String
+  author       User     @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  created_at   DateTime @default(now())
+
+  @@map("posts")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  created_at DateTime @default(now())
+
+  // Relations
+  messages  Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  from_user_id    String
+  from_user       User     @relation("MessageFrom", fields: [from_user_id], references: [id], onDelete: Cascade)
+  to_user_id      String
+  to_user         User     @relation("MessageTo", fields: [to_user_id], references: [id], onDelete: Cascade)
+  body            String
+  read_at         DateTime?
+  created_at      DateTime @default(now())
+
+  @@map("messages")
+}
+
+model AudienceProfile {
+  id                  String   @id @default(cuid())
+  creator_id          String   @unique
+  creator             Creator  @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+  country_breakdown   Json     // {country: percentage}
+  age_breakdown       Json     // {age_range: percentage}
+  gender_breakdown    Json     // {gender: percentage}
+  languages           Json     // {language: percentage}
+  fake_follower_score Float?
+  last_updated_at     DateTime @default(now())
+
+  @@map("audience_profiles")
+}
+
+model ContentMetrics {
+  id              String   @id @default(cuid())
+  post_id         String   // External post ID from social platforms
+  creator_id      String
+  creator         Creator  @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+  impressions     Int?
+  views           Int?
+  likes           Int?
+  comments        Int?
+  engagement_rate Float?
+  date_collected  DateTime @default(now())
+
+  @@map("content_metrics")
+}
+
+model CampaignMetrics {
+  id           String   @id @default(cuid())
+  campaign_id  String   // References brief_id
+  brief_id     String
+  brief        Brief    @relation(fields: [brief_id], references: [id], onDelete: Cascade)
+  impressions  Int?
+  clicks       Int?
+  conversions  Int?
+  spend        Float?
+  date_collected DateTime @default(now())
+
+  @@map("campaign_metrics")
+}
+
+model Footer {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  sort_order  Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  links       FooterLink[]
+
+  @@map("footers")
+}
+
+model FooterLink {
+  id         String   @id @default(cuid())
+  footer_id  String
+  footer     Footer   @relation(fields: [footer_id], references: [id], onDelete: Cascade)
+  label      String
+  href       String
+  type       LinkType @default(URL)
+  sort_order Int      @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("footer_links")
+}
+
+model SiteSettings {
+   id            String   @id @default(cuid())
+   site_name     String   @default("Content Africa")
+   site_description String?
+   favicon_url   String?
+   logo_url      String?
+   copyright     String   @default("© 2024 Content Africa. All rights reserved.")
+   contact_email String   @default("hello@contentafrica.com")
+   support_email String   @default("support@contentafrica.com")
+   phone         String   @default("+1 (555) 123-4567")
+   address       String   @default("123 Content Street\nCreative District\nNew York, NY 10001\nUnited States")
+   social_links  Json?    // {facebook: string, twitter: string, instagram: string, linkedin: string}
+   meta_title    String?
+   meta_description String?
+   google_analytics_id String?
+   maintenance_mode Boolean @default(false)
+   footer_description String?
+   updated_at    DateTime @updatedAt
+   updated_by    String?  // User ID who last updated
+
+   @@map("site_settings")
+}
+
+
+
+model FrontendContent {
+  id          String   @id @default(cuid())
+  section     String   // hero, features, how_it_works, social_proof, cta, footer, header
+  key         String   // unique identifier within section
+  content     Json     // flexible content structure
+  is_active   Boolean  @default(true)
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  updated_by  String?  // User ID who last updated
+
+  @@unique([section, key])
+  @@map("frontend_content")
+}
+
+model Page {
+  id             String   @id @default(cuid())
+  slug           String   @unique // URL slug for the page
+  title          String   // Page title
+  content        String   // Page content (HTML/markdown)
+  meta_title     String?  // SEO meta title
+  meta_description String? // SEO meta description
+  featured_image String?  // Featured image URL
+  is_active      Boolean  @default(true) // Whether page is published
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  updated_by     String?  // User ID who last updated
+
+  @@map("pages")
+}
+
+// Enums
+enum UserRole {
+  CREATOR
+  BRAND
+  COACH
+  ADMIN
+}
+
+enum BriefStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum LinkType {
+  URL
+  PAGE
+}
