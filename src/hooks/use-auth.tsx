@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import type { User } from 'firebase/auth';
-import { onAuthStateChange } from '@/services/auth';
+import { useSession } from 'next-auth/react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type AuthContextType = {
-    user: User | null;
+    user: any;
     loading: boolean;
 };
 
@@ -16,19 +15,19 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const { data: session, status } = useSession();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChange((user) => {
-            setUser(user);
+        if (status !== 'loading') {
             setLoading(false);
-        });
+        }
+    }, [status]);
 
-        return () => unsubscribe();
-    }, []);
-
-    const value = { user, loading };
+    const value = {
+        user: session?.user || null,
+        loading
+    };
 
     if (loading) {
         return (
