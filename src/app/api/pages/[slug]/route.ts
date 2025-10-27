@@ -3,12 +3,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await params;
     const page = await prisma.page.findFirst({
       where: {
-        slug: params.slug,
+        slug,
         is_active: true,
       },
     });

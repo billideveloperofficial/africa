@@ -3,9 +3,9 @@ import { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

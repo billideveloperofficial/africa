@@ -98,8 +98,9 @@ const findCreatorByHandle = (handle: string) => {
     return creators.find(c => c.handle === `@${handle}`);
 }
 
-export default function CreatorProfilePage({ params }: { params: { handle: string } }) {
-  const creator = findCreatorByHandle(params.handle);
+export default async function CreatorProfilePage({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = await params;
+  const creator = findCreatorByHandle(handle);
 
   if (!creator) {
     return <div className="container py-12 text-center">Creator not found.</div>;

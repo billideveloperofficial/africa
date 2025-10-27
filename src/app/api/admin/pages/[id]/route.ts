@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,8 +15,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const page = await prisma.page.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!page) {
@@ -32,7 +33,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,6 +41,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { slug, title, content, meta_title, meta_description, featured_image, is_active } = body;
 
@@ -51,7 +53,7 @@ export async function PUT(
     const existingPage = await prisma.page.findFirst({
       where: {
         slug,
-        id: { not: params.id },
+        id: { not: id },
       },
     });
 
@@ -60,7 +62,7 @@ export async function PUT(
     }
 
     const page = await prisma.page.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         slug,
         title,
@@ -82,7 +84,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -90,8 +92,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     await prisma.page.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Page deleted successfully' });

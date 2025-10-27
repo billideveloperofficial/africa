@@ -51,10 +51,10 @@ export const generateVideoFlow = ai.defineFlow(
         promptParts.push({ media: { url: input.productImage } });
     }
 
-    let { operation } = await ai.generate({
-      model: googleAI.model('veo-2.0-generate-001'),
-      prompt: promptParts,
-    });
+    let { operation } = await ai.generate([
+      ...promptParts.filter(p => typeof p === 'string').map(text => ({ text })),
+      ...promptParts.filter(p => typeof p === 'object' && 'media' in p).map(p => ({ media: (p as any).media })),
+    ]);
 
     if (!operation) {
       throw new Error('Expected the model to return an operation');
