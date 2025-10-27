@@ -49,17 +49,6 @@ export function SignUpForm() {
     }
   });
 
-  useEffect(() => {
-    // Automatically create the test user on component mount
-    // if they don't exist. This is for demo purposes.
-    startTransition(async () => {
-        await signUp({
-            username: "Test User",
-            email: "test@example.com",
-            password: "password"
-        });
-    });
-  }, []);
 
   const onSubmit = (values: SignUpFormValues) => {
     startTransition(async () => {
@@ -74,7 +63,7 @@ export function SignUpForm() {
         }
         toast({
             title: "Success!",
-            description: "Your account has been created.",
+            description: "Your account has been created and you are now logged in.",
         });
         router.push('/dashboard');
     });
