@@ -56,22 +56,30 @@ export function LoginForm() {
             });
 
             if (result?.error) {
-                toast({
-                    title: "Login failed",
-                    description: result.error || "Invalid credentials",
-                    variant: "destructive"
-                });
-                return;
-            }
+                 let errorMessage = "Invalid credentials";
+                 if (result.error.includes("CredentialsSignin")) {
+                     errorMessage = "Invalid email or password. Please check your credentials and try again.";
+                 } else if (result.error.includes("EmailCreateAccount")) {
+                     errorMessage = "No account found with this email. Please sign up first.";
+                 } else if (result.error.includes("Database")) {
+                     errorMessage = "Database connection error. Please try again later.";
+                 }
+                 toast({
+                     title: "Login failed",
+                     description: errorMessage,
+                     variant: "destructive"
+                 });
+                 return;
+             }
 
-            if (!result?.ok) {
-                toast({
-                    title: "Login failed",
-                    description: "Authentication failed",
-                    variant: "destructive"
-                });
-                return;
-            }
+             if (!result?.ok) {
+                 toast({
+                     title: "Login failed",
+                     description: "Authentication failed. Please check your credentials.",
+                     variant: "destructive"
+                 });
+                 return;
+             }
 
             toast({
                 title: "Success!",

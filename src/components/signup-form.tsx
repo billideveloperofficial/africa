@@ -54,9 +54,19 @@ export function SignUpForm() {
     startTransition(async () => {
         const { error } = await signUp(values);
         if(error) {
+            let errorMessage = error;
+            if (error.includes("already exists")) {
+                errorMessage = "An account with this email already exists. Please try logging in instead.";
+            } else if (error.includes("taken")) {
+                errorMessage = "This username is already taken. Please choose a different username.";
+            } else if (error.includes("required")) {
+                errorMessage = "Please fill in all required fields.";
+            } else if (error.includes("Database")) {
+                errorMessage = "Database connection error. Please try again later.";
+            }
             toast({
                 title: "Sign up failed",
-                description: error,
+                description: errorMessage,
                 variant: "destructive"
             });
             return;
