@@ -10,9 +10,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
+    const { slug } = await params;
     const page = await prisma.page.findFirst({
       where: {
-        slug: params.slug,
+        slug: slug,
         is_active: true,
       },
     });
@@ -42,9 +43,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function Page({ params }: PageProps) {
   try {
+    const { slug } = await params;
     const page = await prisma.page.findFirst({
       where: {
-        slug: params.slug,
+        slug: slug,
         is_active: true,
       },
     });

@@ -1,4 +1,21 @@
 import { NextAuthOptions } from 'next-auth'
+import type { DefaultSession } from 'next-auth'
+
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string
+      role: string
+    } & DefaultSession['user']
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string
+    role: string
+  }
+}
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
@@ -6,6 +23,7 @@ import bcrypt from 'bcryptjs'
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
+      id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -16,66 +34,84 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          })
 
-        if (!user || !user.password_hash) {
+          if (!user || !user.password_hash) {
+            return null
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash)
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          role: user.role,
         }
       }
     })
   ],
   callbacks: {
-    async session({ session, token, user }) {
-      if (session.user) {
-        // Get user role from database
-        const dbUser = await prisma.user.findUnique({
-          where: { email: session.user.email! },
-          select: { role: true, id: true }
-        })
-
-        if (dbUser) {
-          (session.user as any).role = dbUser.role as string
-          (session.user as any).id = dbUser.id
-        }
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id
+        session.user.role = token.role
       }
       return session
     },
-    async signIn({ user, account, profile }) {
-      // Check if user exists, if not create with default role
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email! }
-      })
-
-      if (!existingUser) {
-        await prisma.user.create({
-          data: {
-            email: user.email!,
-            username: user.email!.split('@')[0], // Default username
-            password_hash: '', // Not used with Auth0
-            role: 'CREATOR', // Default role
-          }
-        })
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = (user as any).role
       }
+      return token
+    },
+    async signIn({ user, account, profile, email, credentials }) {
+      try {
+        // For credentials provider, we already validated in authorize function
+        if (account?.provider === 'credentials') {
+          return true;
+        }
 
-      return true
+        // For other providers (like OAuth), check if user exists, if not create with default role
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! }
+        })
+
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email!,
+              username: user.email!.split('@')[0], // Default username
+              password_hash: '', // Not used with OAuth
+              role: 'CREATOR', // Default role
+            }
+          })
+        }
+
+        return true
+      } catch (error) {
+        console.error('SignIn callback error:', error)
+        return false
+      }
     },
   },
   pages: {
     signIn: '/login',
   },
+  session: {
+    strategy: 'jwt',
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 }

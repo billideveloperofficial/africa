@@ -44,7 +44,7 @@ export const generateVideoFlow = ai.defineFlow(
     let promptParts: (string | { media: { url: string, contentType?: string } })[] = [
         // This is our AI influencer, Nova.
         { media: { url: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?q=80&w=1932&auto=format&fit=crop', contentType: 'image/jpeg' } },
-        { text: `An AI influencer showcasing a product. ${input.prompt}` }
+        `An AI influencer showcasing a product. ${input.prompt}`
     ];
 
     if (input.productImage) {
@@ -54,10 +54,6 @@ export const generateVideoFlow = ai.defineFlow(
     let { operation } = await ai.generate({
       model: googleAI.model('veo-2.0-generate-001'),
       prompt: promptParts,
-      config: {
-        durationSeconds: 5,
-        aspectRatio: '16:9',
-      },
     });
 
     if (!operation) {

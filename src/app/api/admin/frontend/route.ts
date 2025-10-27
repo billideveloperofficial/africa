@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
         content,
         sort_order,
         updated_at: new Date(),
-        updated_by: session.user.id
+        updated_by: session.user.id!
       },
       create: {
         section,
         key,
         content,
         sort_order,
-        updated_by: session.user.id
+        updated_by: session.user.id!
       }
     });
 
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session?.user?.role || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

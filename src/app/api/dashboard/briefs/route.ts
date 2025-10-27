@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = (session.user as any).id
-    const userRole = (session.user as any).role
+    const userId = session.user.id
+    const userRole = session.user.role
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
           where: { creator_id: creator.id },
           select: { brief_id: true }
         })
-        where.id = { in: offerBriefIds.map(o => o.brief_id) }
+        where.id = { in: offerBriefIds.map((o: any) => o.brief_id) }
       }
     } else if (userRole === 'ADMIN') {
       // Admins can see all briefs
@@ -101,11 +101,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || (session.user as any).role !== 'BRAND') {
+    if (!session?.user?.id || session.user.role !== 'BRAND') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = (session.user as any).id
+    const userId = session.user.id
     const { title, description, budget, deliverables, deadline } = await request.json()
 
     // Get brand profile
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         budget: budget ? parseFloat(budget) : null,
-        deliverables: Array.isArray(deliverables) ? deliverables : [],
+        deliverables: Array.isArray(deliverables) ? JSON.stringify(deliverables) : JSON.stringify([]),
         deadline: deadline ? new Date(deadline) : null,
         status: 'OPEN'
       },

@@ -2,9 +2,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   devIndicators: {
-    allowedDevOrigins: [
-      'https://*.cloudworkstations.dev',
-    ],
+    position: 'bottom-right',
   },
   typescript: {
     ignoreBuildErrors: true,

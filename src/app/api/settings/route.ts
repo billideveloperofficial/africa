@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/settings - Get public site settings (no auth required)
 export async function GET(request: NextRequest) {
@@ -20,16 +18,19 @@ export async function GET(request: NextRequest) {
         copyright: '© 2024 Content Africa. All rights reserved.',
         contact_email: 'hello@contentafrica.com',
         support_email: 'support@contentafrica.com',
-        social_links: JSON.stringify({
+        phone: '+1 (555) 123-4567',
+        address: '123 Content Street\nCreative District\nNew York, NY 10001\nUnited States',
+        social_links: {
           facebook: 'https://facebook.com/contentafrica',
           twitter: 'https://twitter.com/contentafrica',
           instagram: 'https://instagram.com/contentafrica',
           linkedin: 'https://linkedin.com/company/contentafrica'
-        }),
+        },
         meta_title: 'Content Africa - Connecting Creators with Brands',
         meta_description: 'The premier platform connecting African content creators with global brands. Discover, collaborate, and grow your creative career.',
         google_analytics_id: 'GA_MEASUREMENT_ID',
         maintenance_mode: false,
+        footer_description: null,
         updated_at: new Date(),
         updated_by: null,
       };

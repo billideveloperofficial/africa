@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Users, Video, Briefcase, TrendingUp, Activity, Shield, Settings, MessageSquare, FileText, Star } from "lucide-react";
 import { useEffect, useState } from "react";

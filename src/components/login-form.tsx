@@ -58,7 +58,16 @@ export function LoginForm() {
             if (result?.error) {
                 toast({
                     title: "Login failed",
-                    description: result.error,
+                    description: result.error || "Invalid credentials",
+                    variant: "destructive"
+                });
+                return;
+            }
+
+            if (!result?.ok) {
+                toast({
+                    title: "Login failed",
+                    description: "Authentication failed",
                     variant: "destructive"
                 });
                 return;
@@ -69,14 +78,18 @@ export function LoginForm() {
                 description: "You are now logged in.",
             });
 
-            // Check user role and redirect accordingly
-            const session = await getSession();
-            if (session?.user?.role === 'ADMIN') {
-                router.push('/admin');
-            } else {
-                router.push('/dashboard');
-            }
+            // Small delay to ensure session is updated
+            setTimeout(async () => {
+                const session = await getSession();
+                if ((session?.user as any)?.role === 'ADMIN') {
+                    router.push('/admin');
+                } else {
+                    router.push('/dashboard');
+                }
+            }, 100);
+
         } catch (error) {
+            console.error('Login error:', error);
             toast({
                 title: "Login failed",
                 description: "An unexpected error occurred",
